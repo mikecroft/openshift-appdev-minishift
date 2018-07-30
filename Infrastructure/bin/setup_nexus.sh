@@ -7,9 +7,6 @@ if [ "$#" -ne 1 ]; then
 fi
 
 GUID=$1
-
-oc new-project ${GUID}-nexus        --display-name="${GUID} AdvDev Homework Nexus"
-
 echo "Setting up Nexus in project $GUID-nexus"
 
 # Code to set up the Nexus. It will need to
