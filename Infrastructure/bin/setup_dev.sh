@@ -12,3 +12,6 @@ echo "Setting up Parks Development Environment in project ${GUID}-parks-dev"
 # Code to set up the parks development project.
 
 # To be Implemented by Student
+
+# alias OC to project namespace
+alias ocn="oc -n $GUID-parks-dev"

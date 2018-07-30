@@ -15,9 +15,11 @@ echo "Setting up Sonarqube in project $GUID-sonarqube"
 
 # To be Implemented by Student
 
+# alias OC to project namespace
+alias ocn="oc -n $GUID-sonarqube"
 
 # Postgres
-oc new-app
+ocn new-app
     --template=postgresql-persistent \
     --param POSTGRESQL_USER=sonar \
     --param POSTGRESQL_PASSWORD=sonar \

@@ -13,3 +13,6 @@ echo "Setting up Parks Production Environment in project ${GUID}-parks-prod"
 # The Green services/routes need to be active initially to guarantee a successful grading pipeline run.
 
 # To be Implemented by Student
+
+# alias OC to project namespace
+alias ocn="oc -n $GUID-parks-prod"

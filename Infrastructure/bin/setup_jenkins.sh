@@ -29,3 +29,5 @@ echo "Setting up Jenkins in project ${GUID}-jenkins from Git Repo ${REPO} for Cl
 # To be Implemented by Student
 
 
+# alias OC to project namespace
+alias ocn="oc -n $GUID-jenkins"
