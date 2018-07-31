@@ -44,6 +44,8 @@ ocn new-app jenkins-persistent \
     --param VOLUME_CAPACITY=4Gi
 
 
+echo "Current working directory is...."
+echo $(pwd)
 
 ocn new-build \
     --name=jenkins-slave-maven-appdev \
