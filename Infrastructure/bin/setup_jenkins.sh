@@ -45,4 +45,4 @@ ocn new-app jenkins-persistent \
 
 ocn new-build \
     --name=jenkins-slave-maven-appdev \
-    --dockerfile="$(cat ./Infrastructure/templates/jenkins/Dockerfile)"
+    --dockerfile="$(< ./Infrastructure/templates/jenkins/Dockerfile)"
