@@ -30,8 +30,12 @@ echo "Setting up Jenkins in project ${GUID}-jenkins from Git Repo ${REPO} for Cl
 
 
 # alias OC to project namespace
-shopt -s expand_aliases
-ocn="oc -n $GUID-jenkins"
+# shopt -s expand_aliases
+# ocn="oc -n $GUID-jenkins"
+
+function ocn {
+    oc -n $GUID-jenkins $@
+}
 
 
 ocn new-app jenkins-persistent \

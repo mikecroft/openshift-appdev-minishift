@@ -16,8 +16,12 @@ echo "Setting up Nexus in project $GUID-nexus"
 # * Configure Nexus as a docker registry
 
 # alias OC to project namespace
-shopt -s expand_aliases
-ocn="oc -n $GUID-nexus"
+# shopt -s expand_aliases
+# ocn="oc -n $GUID-nexus"
+
+function ocn {
+    oc -n $GUID-nexus $@
+}
 
 ###############
 #

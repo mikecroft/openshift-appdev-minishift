@@ -16,10 +16,12 @@ echo "Setting up Sonarqube in project $GUID-sonarqube"
 # To be Implemented by Student
 
 # alias OC to project namespace
-shopt -s expand_aliases
-ocn="oc -n $GUID-sonarqube"
+# shopt -s expand_aliases
+# ocn="oc -n $GUID-sonarqube"
 
-
+function ocn {
+    oc -n $GUID-sonarqube $@
+}
 
 ###############
 #
