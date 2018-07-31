@@ -26,11 +26,11 @@ alias ocn="oc -n $GUID-sonarqube"
 #
 ###############
 
-ocn create -f templates/sonar/sonar-postgres.yml
-ocn create -f templates/sonar/sonar-data.yml
-ocn create -f templates/sonar/sonar-dc.yml
-ocn create -f templates/sonar/sonar-service.yml
-ocn create -f templates/sonar/sonar-route.yml
+ocn create -f Infrastructure/templates/sonar/sonar-postgres.yml
+ocn create -f Infrastructure/templates/sonar/sonar-data.yml
+ocn create -f Infrastructure/templates/sonar/sonar-dc.yml
+ocn create -f Infrastructure/templates/sonar/sonar-service.yml
+ocn create -f Infrastructure/templates/sonar/sonar-route.yml
 
 # Postgres
 # ocn new-app \

@@ -8,13 +8,14 @@
 def GUID = "f704"
 def customSlavePod = "maven-appdev"
 def customSlaveContainer = "docker-registry.default.svc:5000/${GUID}-jenkins/jenkins-slave-maven-appdev:v3.9"
-def token = "aOJPhBGzCuN-pW4fpnZ6FOEB6m1PM7CJqtDKs67Yegw"      // TODO: set valid token
+def token = "aOJPhBGzCuN-pW4fpnZ6FOEB6m1PM7CJqtDKs67Yegw"      // FIXME: set valid token
 def mvnCmd = "mvn -s ./nexus_openshift_settings.xml"           // TODO: make sure the settings.xml is in the repo
 
 // Custom pod template using container with added Skopeo
-podTemplate(label: customSlavePod, 
-            , containers: [
-                  containerTemplate(
+podTemplate(label: customSlavePod
+          , serviceAccount: 'jenkins'
+          , cloud: 'openshift'
+          , containers: [containerTemplate(
                           name: 'jnlp'
                         , image: customSlaveContainer
                         , workingDir: "/tmp"
@@ -24,12 +25,9 @@ podTemplate(label: customSlavePod,
                         , args: '${computer.jnlpmac} ${computer.name}'
                         , resourceLimitCpu: '1000m'
                         , resourceLimitMemory: '2Gi'
-                        , resourceRequestMemory: '1Gi'
-                    )]
-            , serviceAccount: 'jenkins'
-  ]) {
-      node(customSlavePod) {
-
+                        , resourceRequestMemory: '1Gi')]
+              ){
+  node(customSlavePod) {
           // Checkout Source Code
           stage('Checkout Source') {
               echo "Checking out source"
@@ -40,9 +38,9 @@ podTemplate(label: customSlavePod,
                   , extensions: []
                   , submoduleCfg: []
                   , userRemoteConfigs: [[
-                        credentialsId: 'e63cbb60-a828-4752-bdd4-e23579eb6eca'
+                          credentialsId: 'e63cbb60-a828-4752-bdd4-e23579eb6eca'
                         , url: 'http://gogs-mrc-gogs.apps.muc.example.opentlc.com/CICDLabs/openshift-tasks-private.git'
-                        ]] // TODO: change URL
+                        ]] // FIXME: change URL
                   ])
           }
 
@@ -55,6 +53,8 @@ podTemplate(label: customSlavePod,
           def devTag  = version + env.BUILD_ID
           // Set the tag for the production image: version
           def prodTag = version
+
+          def masterURL = 'https://master.na39.openshift.opentlc.com'
 
           // Using Maven build the war file
           // Do not run tests in this step
@@ -85,12 +85,18 @@ podTemplate(label: customSlavePod,
           stage('Build and Tag OpenShift Image') {
             echo "Building OpenShift container image tasks:${devTag}"
             // start build
-            openshiftBuild apiURL: 'https://master.muc.example.opentlc.com', authToken: token, bldCfg: 'tasks', checkForTriggeredDeployments: 'false', namespace: 'mrc-tasks-dev', showBuildLogs: 'true'//, waitTime: '', waitUnit: 'sec'
-            
-            openshiftTag alias: 'false'
-                  , apiURL: 'https://master.muc.example.opentlc.com'
+            openshiftBuild apiURL: masterURL
                   , authToken: token
-                  , destStream: 'tasks', destTag: "${devTag}"
+                  , bldCfg: 'tasks'
+                  , checkForTriggeredDeployments: 'false'
+                  , namespace: 'mrc-tasks-dev'
+                  , showBuildLogs: 'true'//, waitTime: '', waitUnit: 'sec'
+            
+            openshiftTag apiURL: masterURL
+                  , alias: 'false'
+                  , authToken: token
+                  , destStream: 'tasks'
+                  , destTag: "${devTag}"
                   , destinationAuthToken: ''
                   , destinationNamespace: 'mrc-tasks-dev'
                   , namespace: 'mrc-tasks-dev'
@@ -115,12 +121,12 @@ podTemplate(label: customSlavePod,
             sh "oc volume dc/tasks --add -t=configmap --configmap-name=jboss-files --name=jboss-roles-mount -m=/opt/eap/standalone/configuration/application-roles.properties --sub-path=application-roles.properties -n mrc-tasks-dev"
             sh "oc volume dc/tasks --add -t=configmap --configmap-name=jboss-files --name=jboss-users-mount -m=/opt/eap/standalone/configuration/application-users.properties --sub-path=application-users.properties -n mrc-tasks-dev"
             
-            openshiftDeploy apiURL: 'https://master.muc.example.opentlc.com'
+            openshiftDeploy apiURL: masterURL
                   , authToken: token
                   , depCfg: 'tasks'
                   , namespace: 'mrc-tasks-dev'
 
-            openshiftVerifyDeployment apiURL: 'https://master.muc.example.opentlc.com'
+            openshiftVerifyDeployment apiURL: masterURL
                   , authToken: token
                   , depCfg: 'tasks'
                   , namespace: 'mrc-tasks-dev'
@@ -128,7 +134,7 @@ podTemplate(label: customSlavePod,
                   , verbose: 'false'
                   , verifyReplicaCount: 'true'
 
-            openshiftVerifyService apiURL: 'https://master.muc.example.opentlc.com'
+            openshiftVerifyService apiURL: masterURL
                   , authToken: token
                   , namespace: 'mrc-tasks-dev'
                   , svcName: 'tasks'
@@ -170,8 +176,8 @@ podTemplate(label: customSlavePod,
           def destApp   = "tasks-green"
           def activeApp = ""
 
-            def curDeployment = "tasks-green"
-            def desiredDeployment = "tasks-blue"
+          def curDeployment = "tasks-green"
+          def desiredDeployment = "tasks-blue"
 
           stage('Blue/Green Production Deployment') {
             // TBD
@@ -191,22 +197,22 @@ podTemplate(label: customSlavePod,
             sh "oc create configmap ${desiredDeployment}-config --from-file=./configuration/application-users.properties --from-file=./configuration/application-roles.properties -n mrc-tasks-prod"
             sh "oc set image dc/${desiredDeployment} ${desiredDeployment}=docker-registry.default.svc:5000/mrc-tasks-dev/tasks:${devTag} -n mrc-tasks-prod"
             
-            openshiftDeploy apiURL: 'https://master.muc.example.opentlc.com'
+            openshiftDeploy apiURL: masterURL
                   , authToken: token
                   , depCfg: desiredDeployment
                   , namespace: 'mrc-tasks-prod'
 
-            openshiftVerifyDeployment apiURL: 'https://master.muc.example.opentlc.com'
+            openshiftVerifyDeployment apiURL: masterURL
                   , authToken: token
                   , depCfg: desiredDeployment
-                  , namespace: 'mrc-tasks-prod'
+                  , namespace: 'mrc-tasks-prod' // FIXME: correct namespace
                   , replicaCount: '1'
                   , verbose: 'false'
                   , verifyReplicaCount: 'true'
 
-            openshiftVerifyService apiURL: 'https://master.muc.example.opentlc.com'
+            openshiftVerifyService apiURL: masterURL
                   , authToken: token
-                  , namespace: 'mrc-tasks-prod'
+                  , namespace: 'mrc-tasks-prod' // FIXME: correct namespace
                   , svcName: desiredDeployment
                   , verbose: 'false'
             

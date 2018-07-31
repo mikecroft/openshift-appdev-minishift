@@ -24,12 +24,12 @@ alias ocn="oc -n $GUID-nexus"
 #
 ###############
 
-ocn create -f templates/nexus/nexus-data.yml
-ocn create -f templates/nexus/nexus-dc.yml
-ocn create -f templates/nexus/nexus-route.yml
-ocn create -f templates/nexus/nexus-registry-service.yml
-ocn create -f templates/nexus/nexus-registry-route.yml
-ocn create -f templates/nexus/nexus-service.yml
+ocn create -f Infrastructure/templates/nexus/nexus-data.yml
+ocn create -f Infrastructure/templates/nexus/nexus-dc.yml
+ocn create -f Infrastructure/templates/nexus/nexus-route.yml
+ocn create -f Infrastructure/templates/nexus/nexus-registry-service.yml
+ocn create -f Infrastructure/templates/nexus/nexus-registry-route.yml
+ocn create -f Infrastructure/templates/nexus/nexus-service.yml
 
 # Readiness check
 NEXUS3_ROUTE=http://$(oc get route nexus3 --template='{{ .spec.host }}')
