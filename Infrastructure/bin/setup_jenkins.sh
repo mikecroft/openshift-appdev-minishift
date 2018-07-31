@@ -43,12 +43,6 @@ ocn new-app jenkins-persistent \
     --param MEMORY_LIMIT=2Gi \
     --param VOLUME_CAPACITY=4Gi
 
-
-echo "Current working directory is...."
-echo $(pwd)
-echo "Directory contents are..."
-echo $(ls -l)
-
 ocn new-build \
     --name=jenkins-slave-maven-appdev \
-    --dockerfile='$(cat ./Infrastructure/templates/jenkins/Dockerfile)'
+    --dockerfile="$(cat ./Infrastructure/templates/jenkins/Dockerfile)"
