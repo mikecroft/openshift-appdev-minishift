@@ -46,6 +46,8 @@ ocn new-app jenkins-persistent \
 
 echo "Current working directory is...."
 echo $(pwd)
+echo "Directory contents are..."
+echo $(ls -l)
 
 ocn new-build \
     --name=jenkins-slave-maven-appdev \
