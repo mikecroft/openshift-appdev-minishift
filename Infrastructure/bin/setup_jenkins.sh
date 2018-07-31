@@ -30,16 +30,16 @@ echo "Setting up Jenkins in project ${GUID}-jenkins from Git Repo ${REPO} for Cl
 
 
 # alias OC to project namespace
-alias ocn="oc -n $GUID-jenkins"
+ocn="oc -n $GUID-jenkins"
 
 
-ocn new-app jenkins-persistent \
+$ocn new-app jenkins-persistent \
     --param ENABLE_OAUTH=true \
     --param MEMORY_LIMIT=2Gi \
     --param VOLUME_CAPACITY=4Gi
 
 
 
-ocn new-build \
+$ocn new-build \
     --name=jenkins-slave-maven-appdev \
     --dockerfile='$(cat Infrastructure/templates/jenkins/Dockerfile)'

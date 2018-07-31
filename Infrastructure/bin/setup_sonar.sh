@@ -16,7 +16,7 @@ echo "Setting up Sonarqube in project $GUID-sonarqube"
 # To be Implemented by Student
 
 # alias OC to project namespace
-alias ocn="oc -n $GUID-sonarqube"
+ocn="oc -n $GUID-sonarqube"
 
 
 
@@ -26,11 +26,11 @@ alias ocn="oc -n $GUID-sonarqube"
 #
 ###############
 
-ocn create -f Infrastructure/templates/sonar/sonar-postgres.yml
-ocn create -f Infrastructure/templates/sonar/sonar-data.yml
-ocn create -f Infrastructure/templates/sonar/sonar-dc.yml
-ocn create -f Infrastructure/templates/sonar/sonar-service.yml
-ocn create -f Infrastructure/templates/sonar/sonar-route.yml
+$ocn create -f Infrastructure/templates/sonar/sonar-postgres.yml
+$ocn create -f Infrastructure/templates/sonar/sonar-data.yml
+$ocn create -f Infrastructure/templates/sonar/sonar-dc.yml
+$ocn create -f Infrastructure/templates/sonar/sonar-service.yml
+$ocn create -f Infrastructure/templates/sonar/sonar-route.yml
 
 # Postgres
 # ocn new-app \
