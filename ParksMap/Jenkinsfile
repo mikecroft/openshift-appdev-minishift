@@ -2,6 +2,7 @@ def GUID = "f704"
 def CLUSTER = "na39.openshift.opentlc.com"
 def customSlavePod = "maven-appdev"
 def customSlaveContainer = "docker-registry.default.svc:5000/${GUID}-jenkins/jenkins-slave-maven-appdev"
+def APP="ParksMap"
 
 // Jenkinsfile for ParksMap
 podTemplate(label: customSlavePod
@@ -22,7 +23,7 @@ podTemplate(label: customSlavePod
   node(customSlavePod) {
 
     def masterURL = 'https://master.${CLUSTER}'
-    def mvnCmd = "mvn -s ./nexus_settings.xml -f ParksMap/pom.xml"
+    def mvnCmd = "mvn -s ./nexus_settings.xml -f ${APP}/pom.xml"
     def ocn = "oc -n ${GUID}-parks-dev"
 
     echo "GUID: ${GUID}"
@@ -50,9 +51,9 @@ podTemplate(label: customSlavePod
           }
 
           // Extract version and other properties from the pom.xml
-          def groupId    = getGroupIdFromPom("ParksMap/pom.xml")
-          def artifactId = getArtifactIdFromPom("ParksMap/pom.xml")
-          def version    = getVersionFromPom("ParksMap/pom.xml")
+          def groupId    = getGroupIdFromPom("${APP}/pom.xml")
+          def artifactId = getArtifactIdFromPom("${APP}/pom.xml")
+          def version    = getVersionFromPom("${APP}/pom.xml")
 
           def devTag  = version + env.BUILD_ID
           def prodTag = version
@@ -74,7 +75,7 @@ podTemplate(label: customSlavePod
           // Using Maven call SonarQube for Code Analysis
           stage('Code Analysis') {
             echo "Running Code Analysis"
-            sh "${mvnCmd} sonar:sonar -Dsonar.host.url=http://${GUID}-sonarqube.apps.${CLUSTER}"
+            sh "${mvnCmd} sonar:sonar -Dsonar.host.url=http://sonarqube-${GUID}-sonarqube.apps.${CLUSTER}"
           }
 
           // Publish the built war file to Nexus
@@ -94,7 +95,7 @@ podTemplate(label: customSlavePod
                    namespace: '${GUID}-parks-dev'
                    showBuildLogs: 'true'//, waitTime: '', waitUnit: 'sec'
 
-            sh "${ocn} start-build tasks --follow --from-file=./ParksMap/target/parksmap.jar"  
+            sh "${ocn} start-build tasks --follow --from-file=./${APP}/target/parksmap.jar"  
             
             openshiftTag apiURL: masterURL
                    alias: 'false'

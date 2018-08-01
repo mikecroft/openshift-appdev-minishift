@@ -75,7 +75,7 @@ podTemplate(label: customSlavePod
           // Using Maven call SonarQube for Code Analysis
           stage('Code Analysis') {
             echo "Running Code Analysis"
-            sh "${mvnCmd} sonar:sonar -Dsonar.host.url=http://${GUID}-sonarqube.apps.${CLUSTER}"
+            sh "${mvnCmd} sonar:sonar -Dsonar.host.url=http://sonarqube-${GUID}-sonarqube.apps.${CLUSTER}"
           }
 
           // Publish the built war file to Nexus
