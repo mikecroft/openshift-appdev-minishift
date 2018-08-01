@@ -15,10 +15,6 @@ echo "Setting up Nexus in project $GUID-nexus"
 # * Load Nexus with the right repos
 # * Configure Nexus as a docker registry
 
-# alias OC to project namespace
-# shopt -s expand_aliases
-# ocn="oc -n $GUID-nexus"
-
 function ocn {
     oc -n $GUID-nexus $@
 }
