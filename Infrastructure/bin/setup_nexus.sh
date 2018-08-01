@@ -37,10 +37,10 @@ ocn create -f Infrastructure/templates/nexus/nexus-registry-service.yml
 ocn create -f Infrastructure/templates/nexus/nexus-registry-route.yml
 
 # make sure everything is set up before proceeding
-sleep 10
+# sleep 10
 
 # Readiness check
-NEXUS3_ROUTE=http://$(oc get route nexus3 --template='{{ .spec.host }}')
+NEXUS3_ROUTE=http://$(oc -n $GUID-nexus get route nexus3 --template='{{ .spec.host }}')
 until $(curl --output /dev/null --silent --head --fail $NEXUS3_ROUTE/repository/maven-public/); do
     printf '.'
     sleep 1
