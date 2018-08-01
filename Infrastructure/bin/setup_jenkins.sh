@@ -43,4 +43,4 @@ ocn new-app jenkins-persistent \
     --param MEMORY_LIMIT=2Gi \
     --param VOLUME_CAPACITY=4Gi
 
-ocn new-build --name=jenkins-slave-maven-appdev --dockerfile="$(cat ./Infrastructure/templates/jenkins/Dockerfile)"
+oc -n $GUID-jenkins new-build --name=jenkins-slave-maven-appdev --dockerfile="$(cat ./Infrastructure/templates/jenkins/Dockerfile)"
