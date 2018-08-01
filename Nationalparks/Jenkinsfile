@@ -1,27 +1,228 @@
+def GUID = "f704"
+def CLUSTER = "na39.openshift.opentlc.com"
+def customSlavePod = "maven-appdev"
+def customSlaveContainer = "docker-registry.default.svc:5000/${GUID}-jenkins/jenkins-slave-maven-appdev"
+def APP="NationalParks"
+
 // Jenkinsfile for NationalParks
-podTemplate(
-  label: "skopeo-pod",
-  cloud: "openshift",
-  inheritFrom: "maven",
-  containers: [
-    containerTemplate(
-      name: "jnlp",
-      image: "docker-registry.default.svc:5000/${GUID}-jenkins/jenkins-slave-appdev",
-      resourceRequestMemory: "1Gi",
-      resourceLimitMemory: "2Gi"
-    )
-  ]
-) {
-  node('skopeo-pod') {
+podTemplate(label: customSlavePod
+          , serviceAccount: 'jenkins'
+          , cloud: 'openshift'
+          , containers: [containerTemplate(
+                          name: 'jnlp'
+                        , image: customSlaveContainer
+                        , workingDir: "/tmp"
+                        , command: ''
+                        , alwaysPullImage: false
+                        , ttyEnabled: false
+                        , args: '${computer.jnlpmac} ${computer.name}'
+                        , resourceLimitCpu: '1000m'
+                        , resourceLimitMemory: '2Gi'
+                        , resourceRequestMemory: '1Gi')]
+              ){
+  node(customSlavePod) {
+
+    def masterURL = 'https://master.${CLUSTER}'
+    def mvnCmd = "mvn -s ./nexus_settings.xml -f ${APP}/pom.xml"
+    def ocn = "oc -n ${GUID}-parks-dev"
+
     echo "GUID: ${GUID}"
     echo "CLUSTER: ${CLUSTER}"
 
     // Your Pipeline Code goes here. Make sure to use the ${GUID} and ${CLUSTER} parameters where appropriate
-    // You need to build the application in directory `Nationalparks`.
+    // You need to build the application in directory `NationalParks`.
     // Also copy "../nexus_settings.xml" to your build directory
     // and replace 'GUID' in the file with your ${GUID} to point to >your< Nexus instance
 
-  }
+
+    // Checkout Source Code
+          stage('Checkout Source') {
+              echo "Checking out source"
+              checkout([
+                    $class: 'GitSCM'
+                  , branches: [[name: '*/master']]
+                  , doGenerateSubmoduleConfigurations: false
+                  , extensions: []
+                  , submoduleCfg: []
+                  , userRemoteConfigs: [[
+                        url: 'https://github.com/mikecroft/openshift-appdev.git'
+                        ]]
+                  ])
+          }
+
+          // Extract version and other properties from the pom.xml
+          def groupId    = getGroupIdFromPom("${APP}/pom.xml")
+          def artifactId = getArtifactIdFromPom("${APP}/pom.xml")
+          def version    = getVersionFromPom("${APP}/pom.xml")
+
+          def devTag  = version + env.BUILD_ID
+          def prodTag = version
+          
+
+          // Using Maven build the war file
+          // Do not run tests in this step
+          stage('Build war') {
+            echo "Building version ${version}"
+            sh "${mvnCmd} -DskipTests install"
+          }
+
+          // Using Maven run the unit tests
+          stage('Unit Tests') {
+            echo "Running Unit Tests"
+            sh "${mvnCmd} test"
+          }
+
+          // Using Maven call SonarQube for Code Analysis
+          stage('Code Analysis') {
+            echo "Running Code Analysis"
+            sh "${mvnCmd} sonar:sonar -Dsonar.host.url=http://${GUID}-sonarqube.apps.${CLUSTER}"
+          }
+
+          // Publish the built war file to Nexus
+          stage('Publish to Nexus') {
+            echo "Publish to Nexus"
+            sh "${mvnCmd} deploy deploy -DskipTests=true -DaltDeploymentRepository=nexus::default::http://nexus3-${GUID}-nexus.apps.${CLUSTER}/repository/releases"
+          }
+
+          // Build the OpenShift Image in OpenShift and tag it.
+          stage('Build and Tag OpenShift Image') {
+            echo "Building OpenShift container image tasks:${devTag}"
+            // start build
+            openshiftBuild apiURL: masterURL
+                   authToken: token
+                   bldCfg: 'tasks'
+                   checkForTriggeredDeployments: 'false'
+                   namespace: '${GUID}-parks-dev'
+                   showBuildLogs: 'true'//, waitTime: '', waitUnit: 'sec'
+
+            sh "${ocn} start-build tasks --follow --from-file=./${APP}/target/nationalparks.jar"  
+            
+            openshiftTag apiURL: masterURL
+                   alias: 'false'
+                   authToken: token
+                   destStream: 'tasks'
+                   destTag: "${devTag}"
+                   destinationAuthToken: ''
+                   destinationNamespace: '${GUID}-parks-dev'
+                   namespace: '${GUID}-parks-dev'
+                   srcStream: 'tasks'
+                   srcTag: 'latest'
+                   verbose: 'false'
+          }
+
+          // Deploy the built image to the Development Environment.
+          stage('Deploy to Dev') {
+            echo "Deploying container image to Development Project"
+            // sh "oc set image dc/tasks tasks=docker-registry.default.svc:5000/${GUID}-parks-dev/tasks:${devTag} -n ${GUID}-parks-dev"
+
+            // // remove all volume mounts && delete existing configmap
+            // sh "oc volume dc --remove --all --confirm -n ${GUID}-parks-dev"
+            // sh "oc delete configmap --all -n ${GUID}-parks-dev"
+            
+            // // create new configmap...
+            // sh "oc create configmap jboss-files --from-file=./configuration/application-users.properties --from-file=./configuration/application-roles.properties -n ${GUID}-parks-dev"
+            
+            // // ...then mount it
+            // sh "oc volume dc/tasks --add -t=configmap --configmap-name=jboss-files --name=jboss-roles-mount -m=/opt/eap/standalone/configuration/application-roles.properties --sub-path=application-roles.properties -n ${GUID}-parks-dev"
+            // sh "oc volume dc/tasks --add -t=configmap --configmap-name=jboss-files --name=jboss-users-mount -m=/opt/eap/standalone/configuration/application-users.properties --sub-path=application-users.properties -n ${GUID}-parks-dev"
+            
+            // openshiftDeploy apiURL: masterURL
+            //       , authToken: token
+            //       , depCfg: 'tasks'
+            //       , namespace: '${GUID}-parks-dev'
+
+            // openshiftVerifyDeployment apiURL: masterURL
+            //       , authToken: token
+            //       , depCfg: 'tasks'
+            //       , namespace: '${GUID}-parks-dev'
+            //       , replicaCount: '1'
+            //       , verbose: 'false'
+            //       , verifyReplicaCount: 'true'
+
+            // openshiftVerifyService apiURL: masterURL
+            //       , authToken: token
+            //       , namespace: '${GUID}-parks-dev'
+            //       , svcName: 'tasks'
+            //       , verbose: 'false'
+          }
+
+          // Run Integration Tests in the Development Environment.
+          stage('Integration Tests') {
+            // sleep 50
+
+            // def route = "http://tasks-${GUID}-parks-dev.apps.muc.example.opentlc.com"
+            // echo "Running Integration Tests"
+            
+            // sh "curl -u tasks:redhat1 -H 'Content-Length: 0' -X POST ${route}/ws/tasks/my-task"
+            
+            // echo "set variables"
+            // def check = sh(returnStdout: true, script: "curl -u 'tasks:redhat1' -H \"Accept: application/json\" -X GET ${route}/ws/tasks/1").trim()
+            // def expected = '{"id":1,"title":"my-task","ownerName":"tasks"}'
+            
+            // echo "check = ${check}"
+            // echo "expected = ${expected}"
+            
+            // assert check == expected : "Build failed because check:\n${check}\n\ndid not equal\n${expected}"
+            
+            // sh "curl -i -u 'tasks:redhat1' -X DELETE ${route}/ws/tasks/1"
+          }
+
+          // Copy Image to Nexus Docker Registry
+          stage('Copy Image to Nexus Docker Registry') {
+            echo "Copy image to Nexus Docker Registry"
+            // sh "skopeo copy --src-tls-verify=false --dest-tls-verify=false --screds=openshift:${token}  --dcreds=admin:admin123 docker://docker-registry.default.svc.cluster.local:5000/${GUID}-parks-dev/tasks:${devTag} docker://nexus-registry-${GUID}-nexus.apps.${CLUSTER}/${GUID}-parks-dev/tasks:${devTag}"
+          }
+
+          def destApp   = "tasks-green"
+          def activeApp = "tasks-blue"
+
+          stage('Blue/Green Production Deployment') {
+            // TBD
+            // destApp = sh(returnStdout: true, script: "oc get route tasks --template='{{ .spec.to.name }}' -n mrc-tasks-prod").trim()
+            // activeApp = "tasks-blue"
+            
+            // // note that we want the *inactive* one
+            // if (destApp == "tasks-blue"){
+            //     activeApp = "tasks-green"
+            // } else if (destApp =="tasks-green") {
+            //     activeApp = "tasks-blue"
+            // } else{
+            //     echo destApp
+            // }
+            
+            // sh "oc delete configmap ${activeApp}-config -n mrc-tasks-prod --ignore-not-found"
+            // sh "oc create configmap ${activeApp}-config --from-file=./configuration/application-users.properties --from-file=./configuration/application-roles.properties -n mrc-tasks-prod"
+            // sh "oc set image dc/${activeApp} ${activeApp}=docker-registry.default.svc:5000/${GUID}-parks-dev/tasks:${devTag} -n mrc-tasks-prod"
+            
+            // openshiftDeploy apiURL: masterURL
+            //       , authToken: token
+            //       , depCfg: activeApp
+            //       , namespace: 'mrc-tasks-prod'
+
+            // openshiftVerifyDeployment apiURL: masterURL
+            //       , authToken: token
+            //       , depCfg: activeApp
+            //       , namespace: 'mrc-tasks-prod' // FIXME: correct namespace
+            //       , replicaCount: '1'
+            //       , verbose: 'false'
+            //       , verifyReplicaCount: 'true'
+
+            // openshiftVerifyService apiURL: masterURL
+            //       , authToken: token
+            //       , namespace: 'mrc-tasks-prod' // FIXME: correct namespace
+            //       , svcName: activeApp
+            //       , verbose: 'false'
+            
+          }
+
+          stage('Switch over to new Version') {
+            
+            // No pause for confirmation here; we want full automation
+
+            // echo "Switching Production application to ${destApp}."
+            // sh "oc set route-backends tasks ${activeApp}=1 ${destApp}=0 -n mrc-tasks-prod"
+          }
+    }
 }
 
 // Convenience Functions to read variables from the pom.xml

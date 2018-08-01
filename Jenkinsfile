@@ -7,7 +7,7 @@
 // Globals
 def GUID = "f704"
 def customSlavePod = "maven-appdev"
-def customSlaveContainer = "docker-registry.default.svc:5000/${GUID}-jenkins/jenkins-slave-maven-appdev:v3.9"
+def customSlaveContainer = "docker-registry.default.svc:5000/${GUID}-jenkins/jenkins-slave-maven-appdev"
 def token = "aOJPhBGzCuN-pW4fpnZ6FOEB6m1PM7CJqtDKs67Yegw"      // FIXME: set valid token
 def mvnCmd = "mvn -s ./nexus_openshift_settings.xml"           // TODO: make sure the settings.xml is in the repo
 
