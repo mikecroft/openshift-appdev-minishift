@@ -37,13 +37,10 @@ function ocn {
     oc -n $GUID-jenkins $@
 }
 
-DOCKERFILE=$'FROM docker.io/openshift/jenkins-slave-maven-centos7:v3.9\nUSER root\nRUN yum \-y install skopeo apb && yum clean all\nUSER 1001'
 
 ocn new-app jenkins-persistent \
     --param ENABLE_OAUTH=true \
     --param MEMORY_LIMIT=2Gi \
     --param VOLUME_CAPACITY=4Gi
 
-ocn new-build \
-    --name=jenkins-slave-maven-appdev \
-    --dockerfile=$DOCKERFILE
+ocn new-build --name=jenkins-slave-maven-appdev --dockerfile="$(cat ./Infrastructure/templates/jenkins/Dockerfile)"
