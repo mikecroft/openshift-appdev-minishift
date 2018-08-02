@@ -86,26 +86,26 @@ podTemplate(label: customSlavePod
 
           // Build the OpenShift Image in OpenShift and tag it.
           stage('Build and Tag OpenShift Image') {
-            echo "Building OpenShift container image tasks:${devTag}"
+            echo "Building OpenShift container image ${APP}:${devTag}"
             // start build
             openshiftBuild apiURL: masterURL
                    authToken: token
-                   bldCfg: 'tasks'
+                   bldCfg: '${APP}'
                    checkForTriggeredDeployments: 'false'
                    namespace: '${GUID}-parks-dev'
                    showBuildLogs: 'true'//, waitTime: '', waitUnit: 'sec'
 
-            sh "${ocn} start-build tasks --follow --from-file=./${APP}/target/mlbparks.jar"  
+            sh "${ocn} start-build ${APP} --follow --from-file=./${APP}/target/mlbparks.jar"  
             
             openshiftTag apiURL: masterURL
                    alias: 'false'
                    authToken: token
-                   destStream: 'tasks'
+                   destStream: '${APP}'
                    destTag: "${devTag}"
                    destinationAuthToken: ''
                    destinationNamespace: '${GUID}-parks-dev'
                    namespace: '${GUID}-parks-dev'
-                   srcStream: 'tasks'
+                   srcStream: '${APP}'
                    srcTag: 'latest'
                    verbose: 'false'
           }
@@ -113,7 +113,7 @@ podTemplate(label: customSlavePod
           // Deploy the built image to the Development Environment.
           stage('Deploy to Dev') {
             echo "Deploying container image to Development Project"
-            // sh "oc set image dc/tasks tasks=docker-registry.default.svc:5000/${GUID}-parks-dev/tasks:${devTag} -n ${GUID}-parks-dev"
+            // sh "oc set image dc/${APP} ${APP}=docker-registry.default.svc:5000/${GUID}-parks-dev/${APP}:${devTag} -n ${GUID}-parks-dev"
 
             // // remove all volume mounts && delete existing configmap
             // sh "oc volume dc --remove --all --confirm -n ${GUID}-parks-dev"
@@ -123,17 +123,17 @@ podTemplate(label: customSlavePod
             // sh "oc create configmap jboss-files --from-file=./configuration/application-users.properties --from-file=./configuration/application-roles.properties -n ${GUID}-parks-dev"
             
             // // ...then mount it
-            // sh "oc volume dc/tasks --add -t=configmap --configmap-name=jboss-files --name=jboss-roles-mount -m=/opt/eap/standalone/configuration/application-roles.properties --sub-path=application-roles.properties -n ${GUID}-parks-dev"
-            // sh "oc volume dc/tasks --add -t=configmap --configmap-name=jboss-files --name=jboss-users-mount -m=/opt/eap/standalone/configuration/application-users.properties --sub-path=application-users.properties -n ${GUID}-parks-dev"
+            // sh "oc volume dc/${APP} --add -t=configmap --configmap-name=jboss-files --name=jboss-roles-mount -m=/opt/eap/standalone/configuration/application-roles.properties --sub-path=application-roles.properties -n ${GUID}-parks-dev"
+            // sh "oc volume dc/${APP} --add -t=configmap --configmap-name=jboss-files --name=jboss-users-mount -m=/opt/eap/standalone/configuration/application-users.properties --sub-path=application-users.properties -n ${GUID}-parks-dev"
             
             // openshiftDeploy apiURL: masterURL
             //       , authToken: token
-            //       , depCfg: 'tasks'
+            //       , depCfg: '${APP}'
             //       , namespace: '${GUID}-parks-dev'
 
             // openshiftVerifyDeployment apiURL: masterURL
             //       , authToken: token
-            //       , depCfg: 'tasks'
+            //       , depCfg: '${APP}'
             //       , namespace: '${GUID}-parks-dev'
             //       , replicaCount: '1'
             //       , verbose: 'false'
@@ -142,7 +142,7 @@ podTemplate(label: customSlavePod
             // openshiftVerifyService apiURL: masterURL
             //       , authToken: token
             //       , namespace: '${GUID}-parks-dev'
-            //       , svcName: 'tasks'
+            //       , svcName: '${APP}'
             //       , verbose: 'false'
           }
 
@@ -150,66 +150,66 @@ podTemplate(label: customSlavePod
           stage('Integration Tests') {
             // sleep 50
 
-            // def route = "http://tasks-${GUID}-parks-dev.apps.muc.example.opentlc.com"
+            // def route = "http://${APP}-${GUID}-parks-dev.apps.muc.example.opentlc.com"
             // echo "Running Integration Tests"
             
-            // sh "curl -u tasks:redhat1 -H 'Content-Length: 0' -X POST ${route}/ws/tasks/my-task"
+            // sh "curl -u ${APP}:redhat1 -H 'Content-Length: 0' -X POST ${route}/ws/${APP}/my-task"
             
             // echo "set variables"
-            // def check = sh(returnStdout: true, script: "curl -u 'tasks:redhat1' -H \"Accept: application/json\" -X GET ${route}/ws/tasks/1").trim()
-            // def expected = '{"id":1,"title":"my-task","ownerName":"tasks"}'
+            // def check = sh(returnStdout: true, script: "curl -u '${APP}:redhat1' -H \"Accept: application/json\" -X GET ${route}/ws/${APP}/1").trim()
+            // def expected = '{"id":1,"title":"my-task","ownerName":"${APP}"}'
             
             // echo "check = ${check}"
             // echo "expected = ${expected}"
             
             // assert check == expected : "Build failed because check:\n${check}\n\ndid not equal\n${expected}"
             
-            // sh "curl -i -u 'tasks:redhat1' -X DELETE ${route}/ws/tasks/1"
+            // sh "curl -i -u '${APP}:redhat1' -X DELETE ${route}/ws/${APP}/1"
           }
 
           // Copy Image to Nexus Docker Registry
           stage('Copy Image to Nexus Docker Registry') {
             echo "Copy image to Nexus Docker Registry"
-            // sh "skopeo copy --src-tls-verify=false --dest-tls-verify=false --screds=openshift:${token}  --dcreds=admin:admin123 docker://docker-registry.default.svc.cluster.local:5000/${GUID}-parks-dev/tasks:${devTag} docker://nexus-registry-${GUID}-nexus.apps.${CLUSTER}/${GUID}-parks-dev/tasks:${devTag}"
+            // sh "skopeo copy --src-tls-verify=false --dest-tls-verify=false --screds=openshift:${token}  --dcreds=admin:admin123 docker://docker-registry.default.svc.cluster.local:5000/${GUID}-parks-dev/${APP}:${devTag} docker://nexus-registry-${GUID}-nexus.apps.${CLUSTER}/${GUID}-parks-dev/${APP}:${devTag}"
           }
 
-          def destApp   = "tasks-green"
-          def activeApp = "tasks-blue"
+          def destApp   = "${APP}-green"
+          def activeApp = "${APP}-blue"
 
           stage('Blue/Green Production Deployment') {
             // TBD
-            // destApp = sh(returnStdout: true, script: "oc get route tasks --template='{{ .spec.to.name }}' -n mrc-tasks-prod").trim()
-            // activeApp = "tasks-blue"
+            // destApp = sh(returnStdout: true, script: "oc get route ${APP} --template='{{ .spec.to.name }}' -n mrc-${APP}-prod").trim()
+            // activeApp = "${APP}-blue"
             
             // // note that we want the *inactive* one
-            // if (destApp == "tasks-blue"){
-            //     activeApp = "tasks-green"
-            // } else if (destApp =="tasks-green") {
-            //     activeApp = "tasks-blue"
+            // if (destApp == "${APP}-blue"){
+            //     activeApp = "${APP}-green"
+            // } else if (destApp =="${APP}-green") {
+            //     activeApp = "${APP}-blue"
             // } else{
             //     echo destApp
             // }
             
-            // sh "oc delete configmap ${activeApp}-config -n mrc-tasks-prod --ignore-not-found"
-            // sh "oc create configmap ${activeApp}-config --from-file=./configuration/application-users.properties --from-file=./configuration/application-roles.properties -n mrc-tasks-prod"
-            // sh "oc set image dc/${activeApp} ${activeApp}=docker-registry.default.svc:5000/${GUID}-parks-dev/tasks:${devTag} -n mrc-tasks-prod"
+            // sh "oc delete configmap ${activeApp}-config -n mrc-${APP}-prod --ignore-not-found"
+            // sh "oc create configmap ${activeApp}-config --from-file=./configuration/application-users.properties --from-file=./configuration/application-roles.properties -n mrc-${APP}-prod"
+            // sh "oc set image dc/${activeApp} ${activeApp}=docker-registry.default.svc:5000/${GUID}-parks-dev/${APP}:${devTag} -n mrc-${APP}-prod"
             
             // openshiftDeploy apiURL: masterURL
             //       , authToken: token
             //       , depCfg: activeApp
-            //       , namespace: 'mrc-tasks-prod'
+            //       , namespace: 'mrc-${APP}-prod'
 
             // openshiftVerifyDeployment apiURL: masterURL
             //       , authToken: token
             //       , depCfg: activeApp
-            //       , namespace: 'mrc-tasks-prod' // FIXME: correct namespace
+            //       , namespace: 'mrc-${APP}-prod' // FIXME: correct namespace
             //       , replicaCount: '1'
             //       , verbose: 'false'
             //       , verifyReplicaCount: 'true'
 
             // openshiftVerifyService apiURL: masterURL
             //       , authToken: token
-            //       , namespace: 'mrc-tasks-prod' // FIXME: correct namespace
+            //       , namespace: 'mrc-${APP}-prod' // FIXME: correct namespace
             //       , svcName: activeApp
             //       , verbose: 'false'
             
@@ -220,7 +220,7 @@ podTemplate(label: customSlavePod
             // No pause for confirmation here; we want full automation
 
             // echo "Switching Production application to ${destApp}."
-            // sh "oc set route-backends tasks ${activeApp}=1 ${destApp}=0 -n mrc-tasks-prod"
+            // sh "oc set route-backends ${APP} ${activeApp}=1 ${destApp}=0 -n mrc-${APP}-prod"
           }
     }
 }

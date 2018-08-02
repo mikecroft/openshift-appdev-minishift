@@ -14,5 +14,8 @@ echo "Setting up Parks Production Environment in project ${GUID}-parks-prod"
 
 # To be Implemented by Student
 
-# alias OC to project namespace
-alias ocn="oc -n $GUID-parks-prod"
+function ocn {
+    oc -n $GUID-parks-prod $@
+}
+
+ocn policy add-role-to-user admin system:serviceaccount:${GUID}-jenkins:jenkins 

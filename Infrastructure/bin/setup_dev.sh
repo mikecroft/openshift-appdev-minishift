@@ -33,3 +33,5 @@ function ocn {
 }
 
 ocn create -f Infrastructure/templates/parks-dev/parks-dev-mongodb.yml
+
+ocn policy add-role-to-user admin system:serviceaccount:${GUID}-jenkins:jenkins 
