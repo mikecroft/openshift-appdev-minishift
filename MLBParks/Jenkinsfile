@@ -90,10 +90,10 @@ podTemplate(label: customSlavePod
           stage('Build and Tag OpenShift Image') {
             echo "Building OpenShift container image ${app}:${devTag}"
             // start build
-            // sh "${ocn} start-build mlbparks --follow --from-file=./${APP}/target/mlbparks.jar"  
+            // sh "${ocn} start-build ${app} --follow --from-file=./${APP}/target/${app}.jar"  
             
             // Use Nexus instead
-            sh "${ocn} start-build mlbparks --follow --from-file=http://nexus3-f704-nexus.apps.na39.openshift.opentlc.com/repository/releases/com/openshift/evg/roadshow/mlbparks/1.0/mlbparks-1.0.jar"
+            sh "${ocn} start-build ${app} --follow --from-file=http://nexus3-${GUID}-nexus.apps.na39.openshift.opentlc.com/repository/releases/com/openshift/evg/roadshow/${app}/1.0/${app}-1.0.jar"
 
             echo token            
             openshiftTag apiURL: masterURL, alias: 'false', authToken: token, destStream: app, destTag: "${devTag}", destinationnamespace: "${GUID}-parks-dev", namespace: "${GUID}-parks-dev", srcStream: app, srcTag: 'latest', verbose: 'false'
