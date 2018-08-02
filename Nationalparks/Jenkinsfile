@@ -89,7 +89,7 @@ podTemplate(label: customSlavePod
             echo "Building OpenShift container image ${APP}:${devTag}"
             // start build
             openshiftBuild apiURL: masterURL
-                   authToken: token
+                   authToken: '${token}'
                    bldCfg: '${APP}'
                    checkForTriggeredDeployments: 'false'
                    namespace: '${GUID}-parks-dev'
@@ -99,7 +99,7 @@ podTemplate(label: customSlavePod
             
             openshiftTag apiURL: masterURL
                    alias: 'false'
-                   authToken: token
+                   authToken: '${token}'
                    destStream: '${APP}'
                    destTag: "${devTag}"
                    destinationAuthToken: ''
@@ -127,12 +127,12 @@ podTemplate(label: customSlavePod
             // sh "oc volume dc/${APP} --add -t=configmap --configmap-name=jboss-files --name=jboss-users-mount -m=/opt/eap/standalone/configuration/application-users.properties --sub-path=application-users.properties -n ${GUID}-parks-dev"
             
             // openshiftDeploy apiURL: masterURL
-            //       , authToken: token
+            //       , authToken: '${token}'
             //       , depCfg: '${APP}'
             //       , namespace: '${GUID}-parks-dev'
 
             // openshiftVerifyDeployment apiURL: masterURL
-            //       , authToken: token
+            //       , authToken: '${token}'
             //       , depCfg: '${APP}'
             //       , namespace: '${GUID}-parks-dev'
             //       , replicaCount: '1'
@@ -140,7 +140,7 @@ podTemplate(label: customSlavePod
             //       , verifyReplicaCount: 'true'
 
             // openshiftVerifyService apiURL: masterURL
-            //       , authToken: token
+            //       , authToken: '${token}'
             //       , namespace: '${GUID}-parks-dev'
             //       , svcName: '${APP}'
             //       , verbose: 'false'
@@ -195,12 +195,12 @@ podTemplate(label: customSlavePod
             // sh "oc set image dc/${activeApp} ${activeApp}=docker-registry.default.svc:5000/${GUID}-parks-dev/${APP}:${devTag} -n mrc-${APP}-prod"
             
             // openshiftDeploy apiURL: masterURL
-            //       , authToken: token
+            //       , authToken: '${token}'
             //       , depCfg: activeApp
             //       , namespace: 'mrc-${APP}-prod'
 
             // openshiftVerifyDeployment apiURL: masterURL
-            //       , authToken: token
+            //       , authToken: '${token}'
             //       , depCfg: activeApp
             //       , namespace: 'mrc-${APP}-prod' // FIXME: correct namespace
             //       , replicaCount: '1'
@@ -208,7 +208,7 @@ podTemplate(label: customSlavePod
             //       , verifyReplicaCount: 'true'
 
             // openshiftVerifyService apiURL: masterURL
-            //       , authToken: token
+            //       , authToken: '${token}'
             //       , namespace: 'mrc-${APP}-prod' // FIXME: correct namespace
             //       , svcName: activeApp
             //       , verbose: 'false'
