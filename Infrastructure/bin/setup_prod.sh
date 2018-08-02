@@ -18,4 +18,29 @@ function ocn {
     oc -n $GUID-parks-prod $@
 }
 
-ocn policy add-role-to-user admin system:serviceaccount:${GUID}-jenkins:jenkins 
+
+ocn create -f Infrastructure/templates/parks-prod/parks-prod-mongodb.yml
+ocn policy add-role-to-user admin system:serviceaccount:${GUID}-jenkins:jenkins
+
+function establish_bluegreen_apps {
+    # Create Blue Application
+    ocn new-app ${GUID}-parks-dev/$1:0.0 --name=$1-blue --allow-missing-imagestream-tags=true 
+    ocn set triggers dc/$1-blue --remove-all 
+    ocn expose dc $1-blue --port 8080 
+    ocn create configmap $1-blue-config --from-literal="APPNAME=$2 (Blue)"
+    ocn volume dc/$1-blue --add -t=configmap --configmap-name=$1-blue-config --name=$1-blue-mount
+
+    # Create Green Application
+    ocn new-app ${GUID}-parks-dev/$1:0.0 --name=$1-green --allow-missing-imagestream-tags=true 
+    ocn set triggers dc/$1-green --remove-all 
+    ocn expose dc $1-green --port 8080 
+    ocn create configmap $1-green-config --from-literal="APPNAME=$2 (Green)"
+    ocn volume dc/$1-green --add -t=configmap --configmap-name=$1-green-config --name=$1-green-mount
+
+    # Expose Blue service as route to make blue application active
+    ocn expose svc/$1-blue --name $1 
+}
+
+establish_bluegreen_apps parksmap "ParksMap"
+establish_bluegreen_apps nationalparks "National Parks"
+establish_bluegreen_apps mlbparks "MLB Parks"
