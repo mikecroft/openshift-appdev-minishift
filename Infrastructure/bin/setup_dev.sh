@@ -35,3 +35,21 @@ function ocn {
 ocn create -f Infrastructure/templates/parks-dev/parks-dev-mongodb.yml
 
 ocn policy add-role-to-user admin system:serviceaccount:${GUID}-jenkins:jenkins 
+
+
+
+# Set up parksmap Dev Application
+establish_app parksmap ParksMap
+establish_app nationalparks "National Parks"
+establish_app mlbparks "MLB Parks"
+
+function establish_app {
+    ocn new-build redhat-openjdk18-openshift:1.2 --name=$1 --strategy=source --binary
+
+    ocn new-app $GUID-parks-dev/$1:0.0-0 --name=$1 --allow-missing-imagestream-tags=true
+    ocn set triggers dc/$1 --remove-all
+    ocn expose dc $1 --port 8080
+    ocn expose svc $1
+    ocn create configmap $1-config --from-literal="APPNAME=$2 (Dev)"
+    ocn volume dc/$1 --add -t=configmap --configmap-name=$1-config --name=$1-mount
+}

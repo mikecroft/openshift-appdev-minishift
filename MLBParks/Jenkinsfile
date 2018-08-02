@@ -3,6 +3,7 @@ def CLUSTER = "na39.openshift.opentlc.com"
 def customSlavePod = "maven-appdev"
 def customSlaveContainer = "docker-registry.default.svc:5000/${GUID}-jenkins/jenkins-slave-maven-appdev"
 def APP="MLBParks"
+def app="mlbparks"
 
 // Jenkinsfile for MLBParks
 podTemplate(label: customSlavePod
@@ -22,7 +23,8 @@ podTemplate(label: customSlavePod
               ){
   node(customSlavePod) {
 
-    def masterURL = 'https://master.${CLUSTER}'
+    def masterURL = "https://master.${CLUSTER}"
+    // def token = 'string'   // add as parameter to build
     def mvnCmd = "mvn -s ./nexus_settings.xml -f ${APP}/pom.xml"
     def ocn = "oc -n ${GUID}-parks-dev"
 
@@ -63,153 +65,113 @@ podTemplate(label: customSlavePod
           // Do not run tests in this step
           stage('Build war') {
             echo "Building version ${version}"
-            sh "${mvnCmd} -DskipTests install"
+            // sh "${mvnCmd} -DskipTests install"
           }
 
           // Using Maven run the unit tests
           stage('Unit Tests') {
             echo "Running Unit Tests"
-            sh "${mvnCmd} test"
+            // sh "${mvnCmd} test"
           }
 
           // Using Maven call SonarQube for Code Analysis
           stage('Code Analysis') {
             echo "Running Code Analysis"
-            sh "${mvnCmd} sonar:sonar -Dsonar.host.url=http://sonarqube-${GUID}-sonarqube.apps.${CLUSTER}"
+            // sh "${mvnCmd} sonar:sonar -Dsonar.host.url=http://sonarqube-${GUID}-sonarqube.apps.${CLUSTER}"
           }
 
           // Publish the built war file to Nexus
           stage('Publish to Nexus') {
             echo "Publish to Nexus"
-            sh "${mvnCmd} deploy deploy -DskipTests=true -DaltDeploymentRepository=nexus::default::http://nexus3-${GUID}-nexus.apps.${CLUSTER}/repository/releases"
+            // sh "${mvnCmd} deploy deploy -DskipTests=true -DaltDeploymentRepository=nexus::default::http://nexus3-${GUID}-nexus.apps.${CLUSTER}/repository/releases"
           }
 
           // Build the OpenShift Image in OpenShift and tag it.
           stage('Build and Tag OpenShift Image') {
-            echo "Building OpenShift container image ${APP}:${devTag}"
+            echo "Building OpenShift container image ${app}:${devTag}"
             // start build
-            openshiftBuild apiURL: masterURL
-                   authToken: '${token}'
-                   bldCfg: '${APP}'
-                   checkForTriggeredDeployments: 'false'
-                   namespace: '${GUID}-parks-dev'
-                   showBuildLogs: 'true'//, waitTime: '', waitUnit: 'sec'
-
-            sh "${ocn} start-build ${APP} --follow --from-file=./${APP}/target/mlbparks.jar"  
+            // sh "${ocn} start-build mlbparks --follow --from-file=./${APP}/target/mlbparks.jar"  
             
-            openshiftTag apiURL: masterURL
-                   alias: 'false'
-                   authToken: '${token}'
-                   destStream: '${APP}'
-                   destTag: "${devTag}"
-                   destinationAuthToken: ''
-                   destinationNamespace: '${GUID}-parks-dev'
-                   namespace: '${GUID}-parks-dev'
-                   srcStream: '${APP}'
-                   srcTag: 'latest'
-                   verbose: 'false'
+            // Use Nexus instead
+            sh "${ocn} start-build mlbparks --follow --from-file=http://nexus3-f704-nexus.apps.na39.openshift.opentlc.com/repository/releases/com/openshift/evg/roadshow/mlbparks/1.0/mlbparks-1.0.jar"
+
+            echo token            
+            openshiftTag apiURL: masterURL, alias: 'false', authToken: token, destStream: app, destTag: "${devTag}", destinationnamespace: "${GUID}-parks-dev", namespace: "${GUID}-parks-dev", srcStream: app, srcTag: 'latest', verbose: 'false'
           }
 
           // Deploy the built image to the Development Environment.
           stage('Deploy to Dev') {
             echo "Deploying container image to Development Project"
-            // sh "oc set image dc/${APP} ${APP}=docker-registry.default.svc:5000/${GUID}-parks-dev/${APP}:${devTag} -n ${GUID}-parks-dev"
+            sh "oc set image dc/${app} ${app}=docker-registry.default.svc:5000/${GUID}-parks-dev/${app}:${devTag} -n ${GUID}-parks-dev"
 
-            // // remove all volume mounts && delete existing configmap
-            // sh "oc volume dc --remove --all --confirm -n ${GUID}-parks-dev"
-            // sh "oc delete configmap --all -n ${GUID}-parks-dev"
-            
-            // // create new configmap...
-            // sh "oc create configmap jboss-files --from-file=./configuration/application-users.properties --from-file=./configuration/application-roles.properties -n ${GUID}-parks-dev"
-            
-            // // ...then mount it
-            // sh "oc volume dc/${APP} --add -t=configmap --configmap-name=jboss-files --name=jboss-roles-mount -m=/opt/eap/standalone/configuration/application-roles.properties --sub-path=application-roles.properties -n ${GUID}-parks-dev"
-            // sh "oc volume dc/${APP} --add -t=configmap --configmap-name=jboss-files --name=jboss-users-mount -m=/opt/eap/standalone/configuration/application-users.properties --sub-path=application-users.properties -n ${GUID}-parks-dev"
-            
-            // openshiftDeploy apiURL: masterURL
-            //       , authToken: '${token}'
-            //       , depCfg: '${APP}'
-            //       , namespace: '${GUID}-parks-dev'
-
-            // openshiftVerifyDeployment apiURL: masterURL
-            //       , authToken: '${token}'
-            //       , depCfg: '${APP}'
-            //       , namespace: '${GUID}-parks-dev'
-            //       , replicaCount: '1'
-            //       , verbose: 'false'
-            //       , verifyReplicaCount: 'true'
-
-            // openshiftVerifyService apiURL: masterURL
-            //       , authToken: '${token}'
-            //       , namespace: '${GUID}-parks-dev'
-            //       , svcName: '${APP}'
-            //       , verbose: 'false'
+            openshiftDeploy apiURL: masterURL, authToken: token, depCfg: app, namespace: "${GUID}-parks-dev"
+            openshiftVerifyDeployment apiURL: masterURL, authToken: token, depCfg: app, namespace: "${GUID}-parks-dev", replicaCount: '1', verbose: 'false', verifyReplicaCount: 'true'
+            openshiftVerifyService apiURL: masterURL, authToken: token, namespace: "${GUID}-parks-dev", svcName: app, verbose: 'false'
           }
 
           // Run Integration Tests in the Development Environment.
           stage('Integration Tests') {
             // sleep 50
 
-            // def route = "http://${APP}-${GUID}-parks-dev.apps.muc.example.opentlc.com"
+            // def route = "http://${app}-${GUID}-parks-dev.apps.muc.example.opentlc.com"
             // echo "Running Integration Tests"
             
-            // sh "curl -u ${APP}:redhat1 -H 'Content-Length: 0' -X POST ${route}/ws/${APP}/my-task"
+            // sh "curl -u ${app}:redhat1 -H 'Content-Length: 0' -X POST ${route}/ws/${app}/my-task"
             
             // echo "set variables"
-            // def check = sh(returnStdout: true, script: "curl -u '${APP}:redhat1' -H \"Accept: application/json\" -X GET ${route}/ws/${APP}/1").trim()
-            // def expected = '{"id":1,"title":"my-task","ownerName":"${APP}"}'
+            // def check = sh(returnStdout: true, script: "curl -u '${app}:redhat1' -H \"Accept: application/json\" -X GET ${route}/ws/${app}/1").trim()
+            // def expected = '{"id":1,"title":"my-task","ownerName":"${app}"}'
             
             // echo "check = ${check}"
             // echo "expected = ${expected}"
             
             // assert check == expected : "Build failed because check:\n${check}\n\ndid not equal\n${expected}"
             
-            // sh "curl -i -u '${APP}:redhat1' -X DELETE ${route}/ws/${APP}/1"
+            // sh "curl -i -u '${app}:redhat1' -X DELETE ${route}/ws/${app}/1"
           }
 
           // Copy Image to Nexus Docker Registry
           stage('Copy Image to Nexus Docker Registry') {
             echo "Copy image to Nexus Docker Registry"
-            // sh "skopeo copy --src-tls-verify=false --dest-tls-verify=false --screds=openshift:${token}  --dcreds=admin:admin123 docker://docker-registry.default.svc.cluster.local:5000/${GUID}-parks-dev/${APP}:${devTag} docker://nexus-registry-${GUID}-nexus.apps.${CLUSTER}/${GUID}-parks-dev/${APP}:${devTag}"
+            sh "skopeo copy --src-tls-verify=false --dest-tls-verify=false --screds=openshift:${token}  --dcreds=admin:admin123 docker://docker-registry.default.svc.cluster.local:5000/${GUID}-parks-dev/${app}:${devTag} docker://nexus-registry-${GUID}-nexus.apps.${CLUSTER}/${GUID}-parks-dev/${app}:${devTag}"
           }
 
-          def destApp   = "${APP}-green"
-          def activeApp = "${APP}-blue"
+          def destApp   = "${app}-green"
+          def activeApp = "${app}-blue"
 
           stage('Blue/Green Production Deployment') {
-            // TBD
-            // destApp = sh(returnStdout: true, script: "oc get route ${APP} --template='{{ .spec.to.name }}' -n mrc-${APP}-prod").trim()
-            // activeApp = "${APP}-blue"
+            // destApp = sh(returnStdout: true, script: "oc get route ${app} --template='{{ .spec.to.name }}' -n ${GUID}-${app}-prod").trim()
+            // activeApp = "${app}-blue"
             
             // // note that we want the *inactive* one
-            // if (destApp == "${APP}-blue"){
-            //     activeApp = "${APP}-green"
-            // } else if (destApp =="${APP}-green") {
-            //     activeApp = "${APP}-blue"
+            // if (destApp == "${app}-blue"){
+            //     activeApp = "${app}-green"
+            // } else if (destApp =="${app}-green") {
+            //     activeApp = "${app}-blue"
             // } else{
             //     echo destApp
             // }
             
-            // sh "oc delete configmap ${activeApp}-config -n mrc-${APP}-prod --ignore-not-found"
-            // sh "oc create configmap ${activeApp}-config --from-file=./configuration/application-users.properties --from-file=./configuration/application-roles.properties -n mrc-${APP}-prod"
-            // sh "oc set image dc/${activeApp} ${activeApp}=docker-registry.default.svc:5000/${GUID}-parks-dev/${APP}:${devTag} -n mrc-${APP}-prod"
+            // sh "oc delete configmap ${activeApp}-config -n ${GUID}-${app}-prod --ignore-not-found"
+            // sh "oc create configmap ${activeApp}-config --from-file=./configuration/application-users.properties --from-file=./configuration/application-roles.properties -n ${GUID}-${app}-prod"
+            // sh "oc set image dc/${activeApp} ${activeApp}=docker-registry.default.svc:5000/${GUID}-parks-dev/${app}:${devTag} -n ${GUID}-${app}-prod"
             
             // openshiftDeploy apiURL: masterURL
-            //       , authToken: '${token}'
+            //       , authToken: token
             //       , depCfg: activeApp
-            //       , namespace: 'mrc-${APP}-prod'
+            //       , namespace: '${GUID}-${app}-prod'
 
             // openshiftVerifyDeployment apiURL: masterURL
-            //       , authToken: '${token}'
+            //       , authToken: token
             //       , depCfg: activeApp
-            //       , namespace: 'mrc-${APP}-prod' // FIXME: correct namespace
+            //       , namespace: '${GUID}-${app}-prod' // FIXME: correct namespace
             //       , replicaCount: '1'
             //       , verbose: 'false'
             //       , verifyReplicaCount: 'true'
 
             // openshiftVerifyService apiURL: masterURL
-            //       , authToken: '${token}'
-            //       , namespace: 'mrc-${APP}-prod' // FIXME: correct namespace
+            //       , authToken: token
+            //       , namespace: '${GUID}-${app}-prod' // FIXME: correct namespace
             //       , svcName: activeApp
             //       , verbose: 'false'
             
@@ -220,7 +182,7 @@ podTemplate(label: customSlavePod
             // No pause for confirmation here; we want full automation
 
             // echo "Switching Production application to ${destApp}."
-            // sh "oc set route-backends ${APP} ${activeApp}=1 ${destApp}=0 -n mrc-${APP}-prod"
+            // sh "oc set route-backends ${app} ${activeApp}=1 ${destApp}=0 -n ${GUID}-${app}-prod"
           }
     }
 }
