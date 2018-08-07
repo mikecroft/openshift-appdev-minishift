@@ -40,8 +40,8 @@ function ocn {
 
 ocn new-app jenkins-persistent \
     --param ENABLE_OAUTH=true \
-    --param MEMORY_LIMIT=2Gi \
-    --param CPU_LIMIT=2 \
     --param VOLUME_CAPACITY=4Gi
+
+ocn set resources dc/jenkins --limits=cpu=2,memory=2Gi --requests=memory=2Gi,cpu=2
 
 oc -n $GUID-jenkins new-build --name=jenkins-slave-maven-appdev --dockerfile="$(cat ./Infrastructure/templates/jenkins/Dockerfile)"
