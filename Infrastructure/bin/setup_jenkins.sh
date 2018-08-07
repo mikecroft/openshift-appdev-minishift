@@ -44,4 +44,7 @@ ocn new-app jenkins-persistent \
 
 ocn set resources dc/jenkins --limits=cpu=2,memory=2Gi --requests=memory=2Gi,cpu=2
 
+# cant use ocn function here because the $@ pattern interprets the dockerfile as separate arguments
 oc -n $GUID-jenkins new-build --name=jenkins-slave-maven-appdev --dockerfile="$(cat ./Infrastructure/templates/jenkins/Dockerfile)"
+
+ocn create -f Infrastructure/templates/jenkins/pipelines.yml
