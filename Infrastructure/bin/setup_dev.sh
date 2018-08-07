@@ -13,36 +13,46 @@ echo "Setting up Parks Development Environment in project ${GUID}-parks-dev"
 
 # setup_dev.sh: This script needs to do the following in the $GUID-parks-dev project:
 
-#  ❌  1 Grant the correct permissions to the Jenkins service account
+#  ✔  1 Grant the correct permissions to the Jenkins service account
 #  ✔  2 Create a MongoDB database
-#  ❌  3 Create binary build configurations for the pipelines to use for each microservice
-#  ❌  4 Create ConfigMaps for configuration of the applications
-#  ❌      4.1 Set APPNAME to the following values—the grading pipeline checks for these exact strings:
-#  ❌          4.1.1 MLB Parks (Dev)
-#  ❌          4.1.2 National Parks (Dev)
-#  ❌          4.1.3 ParksMap (Dev)
+#  ✔  3 Create binary build configurations for the pipelines to use for each microservice
+#  ✔  4 Create ConfigMaps for configuration of the applications
+#  ✔      4.1 Set APPNAME to the following values—the grading pipeline checks for these exact strings:
+#  ✔          4.1.1 MLB Parks (Dev)
+#  ✔          4.1.2 National Parks (Dev)
+#  ✔          4.1.3 ParksMap (Dev)
 
-#  ❌  5 Set up placeholder deployment configurations for the three microservices
-#  ❌  6 Configure the deployment configurations using the ConfigMaps
+#  ✔  5 Set up placeholder deployment configurations for the three microservices
+#  ✔  6 Configure the deployment configurations using the ConfigMaps
 #  ❌  7 Set deployment hooks to populate the database for the back end services
 #  ❌  8 Set up liveness and readiness probes
-#  ❌  9 Expose and label the services properly (parksmap-backend)
+#  ✔  9 Expose and label the services properly (parksmap-backend)
 
 function ocn {
     oc -n $GUID-parks-dev $@
 }
 
 ocn create -f Infrastructure/templates/parks-dev/parks-dev-mongodb.yml
-
 ocn policy add-role-to-user admin system:serviceaccount:${GUID}-jenkins:jenkins 
-
-
 
 # Set up parksmap Dev Application
 function establish_app {
-    ocn new-build redhat-openjdk18-openshift:1.2 --name=$1 --strategy=source --binary
 
-    ocn new-app $GUID-parks-dev/$1:0.0-0 --name=$1 --allow-missing-imagestream-tags=true
+    # mlbparks is a WAR file
+    if [ $1 = mlbparks ]
+    then
+        ocn new-build jboss-eap70-openshift:1.7 --name=$1 --strategy=source --binary
+    else
+        ocn new-build redhat-openjdk18-openshift:1.2 --name=$1 --strategy=source --binary
+    fi
+
+    # set backend labels
+    if [ $1 = parksmap ]
+    then
+        ocn new-app $GUID-parks-dev/$1:0.0-0 --name=$1 --allow-missing-imagestream-tags=true
+    else
+        ocn new-app $GUID-parks-dev/$1:0.0-0 --name=$1 --allow-missing-imagestream-tags=true --labels=type=parksmap-backend
+    fi
     ocn set triggers dc/$1 --remove-all
     ocn expose dc $1 --port 8080
     ocn expose svc $1

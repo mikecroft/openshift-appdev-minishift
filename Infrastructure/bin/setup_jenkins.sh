@@ -40,9 +40,7 @@ function ocn {
 
 ocn new-app jenkins-persistent \
     --param ENABLE_OAUTH=true \
-    --param MEMORY_REQUEST=2Gi \
     --param MEMORY_LIMIT=2Gi \
-    --param CPU_REQUEST=1 \
     --param CPU_LIMIT=2 \
     --param VOLUME_CAPACITY=4Gi
 
