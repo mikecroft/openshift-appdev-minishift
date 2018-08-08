@@ -37,7 +37,7 @@ ocn new-app jenkins-persistent \
     --param ENABLE_OAUTH=true \
     --param VOLUME_CAPACITY=4Gi
 
-ocn set resources dc/jenkins --limits=cpu=2,memory=2Gi --requests=memory=2Gi,cpu=2
+ocn set resources dc/jenkins --limits=cpu=1200m,memory=1Gi --requests=memory=1Gi,cpu=1000m
 
 # cant use ocn function here because the $@ pattern interprets the dockerfile as separate arguments
 oc -n $GUID-jenkins new-build --name=jenkins-slave-maven-appdev --dockerfile="$(cat ./Infrastructure/templates/jenkins/Dockerfile)"
