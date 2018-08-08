@@ -18,30 +18,31 @@ function ocn {
     oc -n $GUID-parks-prod $@
 }
 
-
 ocn create -f Infrastructure/templates/parks-prod/parks-prod-mongodb.yml
 ocn policy add-role-to-user admin system:serviceaccount:${GUID}-jenkins:jenkins
 
 function establish_bluegreen_apps {
 
+    # Leave labels until pipeline
+    # 
+    # if [ $1 = parksmap ]
+    # then
+    #     ocn new-app ${GUID}-parks-prod/$1:0.0 --name=$1-blue --allow-missing-imagestream-tags=true 
+    #     ocn new-app ${GUID}-parks-prod/$1:0.0 --name=$1-green --allow-missing-imagestream-tags=true 
+    # else
+    #     ocn new-app ${GUID}-parks-prod/$1:0.0 --name=$1-blue --allow-missing-imagestream-tags=true --labels=type=parksmap-backend
+    #     ocn new-app ${GUID}-parks-prod/$1:0.0 --name=$1-green --allow-missing-imagestream-tags=true --labels=type=parksmap-backend
+    # fi
 
-    if [ $1 = parksmap ]
-    then
-        ocn new-app ${GUID}-parks-dev/$1:0.0 --name=$1-blue --allow-missing-imagestream-tags=true
-        ocn new-app ${GUID}-parks-dev/$1:0.0 --name=$1-green --allow-missing-imagestream-tags=true
-    else
-        ocn new-app ${GUID}-parks-dev/$1:0.0 --name=$1-blue --allow-missing-imagestream-tags=true --labels=type=parksmap-backend
-        ocn new-app ${GUID}-parks-dev/$1:0.0 --name=$1-green --allow-missing-imagestream-tags=true --labels=type=parksmap-backend
-    fi
-
-    # Set up Blue Application 
+    # Set up Blue Application
+    ocn new-app ${GUID}-parks-prod/$1:0.0 --name=$1-blue --allow-missing-imagestream-tags=true 
     ocn set triggers dc/$1-blue --remove-all 
-    ocn expose dc $1-blue --port 8080 
+    ocn expose dc $1-blue --port 8080
     ocn create configmap $1-blue-config --from-literal="APPNAME=$2 (Blue)"
     ocn volume dc/$1-blue --add -t=configmap --configmap-name=$1-blue-config --name=$1-blue-mount
 
     # Set up Green Application
-     
+    ocn new-app ${GUID}-parks-prod/$1:0.0 --name=$1-green --allow-missing-imagestream-tags=true 
     ocn set triggers dc/$1-green --remove-all 
     ocn expose dc $1-green --port 8080 
     ocn create configmap $1-green-config --from-literal="APPNAME=$2 (Green)"
