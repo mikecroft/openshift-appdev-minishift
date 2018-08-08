@@ -33,7 +33,9 @@ items:
               - name: MONGODB_ADMIN_PASSWORD
                 value: mongodb
               - name: MONGODB_DATABASE
-                value: mongodb
+                value: parks
+              - name: DB_REPLICASET
+                value: rs0
             image: >-
               registry.access.redhat.com/rhscl/mongodb-32-rhel7@sha256:58ad73c16aca6c8c1eafcb670d4b692c79ddcb31a3d98814e3fe7498c5702510
             imagePullPolicy: IfNotPresent

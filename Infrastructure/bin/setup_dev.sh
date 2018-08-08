@@ -22,6 +22,7 @@ function ocn {
 ocn create -f Infrastructure/templates/parks-dev/parks-dev-mongodb.yml
 ocn policy add-role-to-user admin system:serviceaccount:${GUID}-jenkins:jenkins 
 
+ocn create -f Infrastructure/templates/parks-dev/parks-dev-mongo-creds.yml
 # ocn create -f Infrastructure/templates/parks-dev/parks-dev-mlbparks.yml
 # ocn create -f Infrastructure/templates/parks-dev/parks-dev-nationalparks.yml
 # ocn create -f Infrastructure/templates/parks-dev/parks-dev-parksmap.yml
@@ -49,10 +50,17 @@ function establish_app {
     ocn set probe dc/$1 --liveness --get-url=http://:8080/ws/healthz/ --initial-delay-seconds=30
     ocn expose dc $1 --port 8080
     ocn expose svc $1
-    ocn create configmap $1-config --from-literal="APPNAME=$2 (Dev)"
+
+    # ocn function won't work here, same as elsewhere due to space in the literal
+    oc -n $GUID-parks-dev create configmap $1-config --from-literal="APPNAME=$2 (Dev)"
     ocn volume dc/$1 --add -t=configmap --configmap-name=$1-config --name=$1-mount
+    ocn set env dc/$1 --from=configmap/$1-config
+    ocn set env dc/$1 --from=configmap/mongo-creds
 }
 
-establish_app parksmap ParksMap
+establish_app parksmap "ParksMap"
 establish_app nationalparks "National Parks"
 establish_app mlbparks "MLB Parks"
+
+
+ocn policy add-role-to-user view --serviceaccount=default
