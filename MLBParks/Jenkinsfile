@@ -16,7 +16,7 @@ podTemplate(label: customSlavePod
                         , alwaysPullImage: false
                         , ttyEnabled: false
                         , args: '${computer.jnlpmac} ${computer.name}'
-                        , resourceLimitCpu: '400m'
+                        , resourceLimitCpu: '800m'
                         , resourceLimitMemory: '2Gi'
                         , resourceRequestMemory: '1Gi')]
               ){
