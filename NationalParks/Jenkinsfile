@@ -148,12 +148,16 @@ podTemplate(label: customSlavePod
             openshiftDeploy  depCfg: destApp, namespace: "${GUID}-parks-prod"
             openshiftVerifyDeployment  depCfg: destApp, namespace: "${GUID}-parks-prod", replicaCount: '1', verbose: 'false', verifyReplicaCount: 'true'
             openshiftVerifyService  namespace: "${GUID}-parks-prod", svcName: destApp, verbose: 'false'
-            
           }
 
           stage('Switch over to new Version') {
             echo "Switching Production application to ${destApp}."
+
+            sh "${ocnp} label svc ${activeApp} type-"
+            sh "${ocnp} label svc ${destApp} type=parksmap-backend --overwrite"
             sh "${ocnp} set route-backends ${app} ${destApp}=1 ${activeApp}=0"
+
+            sh "curl http://\$(${ocnp} get route ${app} --template='{{ .spec.host }}')/ws/load/data/"
           }
     }
 }

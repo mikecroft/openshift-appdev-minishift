@@ -21,18 +21,9 @@ function ocn {
 ocn create -f Infrastructure/templates/parks-prod/parks-prod-mongodb.yml
 ocn policy add-role-to-user admin system:serviceaccount:${GUID}-jenkins:jenkins
 
-function establish_bluegreen_apps {
+ocn create -f Infrastructure/templates/parks-prod/parks-prod-mongo-creds.yml
 
-    # Leave labels until pipeline
-    # 
-    # if [ $1 = parksmap ]
-    # then
-    #     ocn new-app ${GUID}-parks-prod/$1:0.0 --name=$1-blue --allow-missing-imagestream-tags=true 
-    #     ocn new-app ${GUID}-parks-prod/$1:0.0 --name=$1-green --allow-missing-imagestream-tags=true 
-    # else
-    #     ocn new-app ${GUID}-parks-prod/$1:0.0 --name=$1-blue --allow-missing-imagestream-tags=true --labels=type=parksmap-backend
-    #     ocn new-app ${GUID}-parks-prod/$1:0.0 --name=$1-green --allow-missing-imagestream-tags=true --labels=type=parksmap-backend
-    # fi
+function establish_bluegreen_apps {
 
     # Set up Blue Application
     ocn new-app ${GUID}-parks-prod/$1:0.0 --name=$1-blue --allow-missing-images=true 
@@ -48,8 +39,8 @@ function establish_bluegreen_apps {
     ocn create configmap $1-green-config --from-literal="APPNAME=$2 (Green)"
     ocn volume dc/$1-green --add -t=configmap --configmap-name=$1-green-config --name=$1-green-mount
 
-    # Expose Blue service as route to make blue application active
-    ocn expose svc/$1-blue --name $1 
+    # Expose *green* service first as route so pipeline switches to make blue application active
+    ocn expose svc/$1-green --name $1 
 }
 
 establish_bluegreen_apps parksmap "ParksMap"
