@@ -29,11 +29,15 @@ function ocn {
 #
 ###############
 
-ocn create -f Infrastructure/templates/sonar/sonar-postgres.yml
-ocn create -f Infrastructure/templates/sonar/sonar-data.yml
-ocn create -f Infrastructure/templates/sonar/sonar-dc.yml
-ocn create -f Infrastructure/templates/sonar/sonar-service.yml
-ocn create -f Infrastructure/templates/sonar/sonar-route.yml
+# Ignore SonarQube to save resources
+
+# ocn create -f Infrastructure/templates/sonar/sonar-postgres.yml
+# ocn create -f Infrastructure/templates/sonar/sonar-data.yml
+# ocn create -f Infrastructure/templates/sonar/sonar-dc.yml
+# ocn create -f Infrastructure/templates/sonar/sonar-service.yml
+# ocn create -f Infrastructure/templates/sonar/sonar-route.yml
+
+
 
 # Postgres
 # ocn new-app \
