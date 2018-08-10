@@ -30,14 +30,14 @@ function establish_bluegreen_apps {
     ocn set triggers dc/$1-blue --remove-all 
     ocn expose dc $1-blue --port 8080
     oc  -n $GUID-parks-prod create configmap $1-blue-config --from-literal="APPNAME=$2 (Blue)"
-    ocn volume dc/$1-blue --add -t=configmap --configmap-name=$1-blue-config --name=$1-blue-mount
+    ocn set env dc/$1-blue --from=configmap/$1-blue-config
 
     # Set up Green Application
     ocn new-app ${GUID}-parks-prod/$1:0.0 --name=$1-green --allow-missing-images=true 
     ocn set triggers dc/$1-green --remove-all 
     ocn expose dc $1-green --port 8080 
     oc  -n $GUID-parks-prod create configmap $1-green-config --from-literal="APPNAME=$2 (Green)"
-    ocn volume dc/$1-green --add -t=configmap --configmap-name=$1-green-config --name=$1-green-mount
+    ocn set env dc/$1-green --from=configmap/$1-green-config
 
     # Expose *green* service first as route so pipeline switches to make blue application active
     ocn expose svc/$1-green --name $1 

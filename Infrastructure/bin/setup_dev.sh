@@ -27,7 +27,7 @@ ocn create -f Infrastructure/templates/parks-dev/parks-dev-mongo-creds.yml
 # ocn create -f Infrastructure/templates/parks-dev/parks-dev-nationalparks.yml
 # ocn create -f Infrastructure/templates/parks-dev/parks-dev-parksmap.yml
 
-Set up parksmap Dev Application
+# Set up parksmap Dev Application
 function establish_app {
 
     # mlbparks is a WAR file
@@ -53,7 +53,6 @@ function establish_app {
 
     # ocn function won't work here, same as elsewhere due to space in the literal
     oc -n $GUID-parks-dev create configmap $1-config --from-literal="APPNAME=$2 (Dev)"
-    ocn volume dc/$1 --add -t=configmap --configmap-name=$1-config --name=$1-mount
     ocn set env dc/$1 --from=configmap/$1-config
     ocn set env dc/$1 --from=configmap/mongo-creds
 }
