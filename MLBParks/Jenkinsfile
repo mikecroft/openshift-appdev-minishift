@@ -127,7 +127,7 @@ podTemplate(label: customSlavePod
                 echo activeApp
             }
            
-            sh "${ocnp} set image dc/${destApp} ${destApp}=docker-registry.default.svc:5000/${GUID}-parks-prod/${app}:${prodTag}"
+            sh "${ocnp} set image dc/${destApp} ${destApp}=172.30.1.1:5000/${GUID}-parks-prod/${app}:${prodTag}"
 
             openshiftDeploy  depCfg: destApp, namespace: "${GUID}-parks-prod", waitTime: '30', waitUnit: 'min'
             openshiftVerifyDeployment  depCfg: destApp, namespace: "${GUID}-parks-prod", replicaCount: '1', verbose: 'false', verifyReplicaCount: 'true'

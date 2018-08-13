@@ -7,7 +7,7 @@
 // Globals
 def GUID = "f704"
 def customSlavePod = "maven-appdev"
-def customSlaveContainer = "docker-registry.default.svc:5000/${GUID}-jenkins/jenkins-slave-maven-appdev"
+def customSlaveContainer = "172.30.1.1:5000/${GUID}-jenkins/jenkins-slave-maven-appdev"
 def token = "aOJPhBGzCuN-pW4fpnZ6FOEB6m1PM7CJqtDKs67Yegw"      // FIXME: set valid token
 def mvnCmd = "mvn -s ./nexus_openshift_settings.xml"           // TODO: make sure the settings.xml is in the repo
 
@@ -108,7 +108,7 @@ podTemplate(label: customSlavePod
           // Deploy the built image to the Development Environment.
           stage('Deploy to Dev') {
             echo "Deploying container image to Development Project"
-            sh "oc set image dc/tasks tasks=docker-registry.default.svc:5000/mrc-tasks-dev/tasks:${devTag} -n mrc-tasks-dev"
+            sh "oc set image dc/tasks tasks=172.30.1.1:5000/mrc-tasks-dev/tasks:${devTag} -n mrc-tasks-dev"
 
             // remove all volume mounts && delete existing configmap
             sh "oc volume dc --remove --all --confirm -n mrc-tasks-dev"
@@ -195,7 +195,7 @@ podTemplate(label: customSlavePod
             
             sh "oc delete configmap ${desiredDeployment}-config -n mrc-tasks-prod --ignore-not-found"
             sh "oc create configmap ${desiredDeployment}-config --from-file=./configuration/application-users.properties --from-file=./configuration/application-roles.properties -n mrc-tasks-prod"
-            sh "oc set image dc/${desiredDeployment} ${desiredDeployment}=docker-registry.default.svc:5000/mrc-tasks-dev/tasks:${devTag} -n mrc-tasks-prod"
+            sh "oc set image dc/${desiredDeployment} ${desiredDeployment}=172.30.1.1:5000/mrc-tasks-dev/tasks:${devTag} -n mrc-tasks-prod"
             
             openshiftDeploy apiURL: masterURL
                   , authToken: token
