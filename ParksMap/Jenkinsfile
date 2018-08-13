@@ -82,7 +82,7 @@ podTemplate(label: customSlavePod
           stage('Build and Tag OpenShift Image') {
             echo "Building OpenShift container image ${app}:${devTag}"
             // start build
-            sh "${ocnd} start-build ${app} --follow --from-file=./${APP}/target/${app}.jar"  
+            sh "${ocnd} start-build ${app} --follow --from-file=./${APP}/target/${app}.jar --wait=true"  
             
             // Use Nexus instead
             // sh "${ocnd} start-build ${app} --follow --from-file=http://nexus3-${GUID}-nexus.apps.na39.openshift.opentlc.com/repository/releases/com/openshift/evg/roadshow/${app}/1.0/${app}-1.0.jar"
@@ -95,30 +95,14 @@ podTemplate(label: customSlavePod
             echo "Deploying container image to Development Project"
             sh "${ocnd} set image dc/${app} ${app}=docker-registry.default.svc:5000/${GUID}-parks-dev/${app}:${devTag}"
 
-            openshiftDeploy  depCfg: app, namespace: "${GUID}-parks-dev"
+            openshiftDeploy  depCfg: app, namespace: "${GUID}-parks-dev", waitTime: '30', waitUnit: 'min'
             openshiftVerifyDeployment  depCfg: app, namespace: "${GUID}-parks-dev", replicaCount: '1', verbose: 'false', verifyReplicaCount: 'true'
             openshiftVerifyService  namespace: "${GUID}-parks-dev", svcName: app, verbose: 'false'
           }
 
           // Run Integration Tests in the Development Environment.
           stage('Integration Tests') {
-            // sleep 50
-
-            // def route = "http://${app}-${GUID}-parks-dev.apps.${CLUSTER}"
-            // echo "Running Integration Tests"
-            
-            // sh "curl -u ${app}:redhat1 -H 'Content-Length: 0' -X POST ${route}/ws/${app}/my-task"
-            
-            // echo "set variables"
-            // def check = sh(returnStdout: true, script: "curl -u '${app}:redhat1' -H \"Accept: application/json\" -X GET ${route}/ws/${app}/1").trim()
-            // def expected = '{"id":1,"title":"my-task","ownerName":"${app}"}'
-            
-            // echo "check = ${check}"
-            // echo "expected = ${expected}"
-            
-            // assert check == expected : "Build failed because check:\n${check}\n\ndid not equal\n${expected}"
-            
-            // sh "curl -i -u '${app}:redhat1' -X DELETE ${route}/ws/${app}/1"
+            sleep 100
           }
 
           // Copy Image to Nexus Docker Registry
@@ -145,7 +129,7 @@ podTemplate(label: customSlavePod
            
             sh "${ocnp} set image dc/${destApp} ${destApp}=docker-registry.default.svc:5000/${GUID}-parks-prod/${app}:${prodTag}"
 
-            openshiftDeploy  depCfg: destApp, namespace: "${GUID}-parks-prod"
+            openshiftDeploy  depCfg: destApp, namespace: "${GUID}-parks-prod", waitTime: '30', waitUnit: 'min'
             openshiftVerifyDeployment  depCfg: destApp, namespace: "${GUID}-parks-prod", replicaCount: '1', verbose: 'false', verifyReplicaCount: 'true'
             openshiftVerifyService  namespace: "${GUID}-parks-prod", svcName: destApp, verbose: 'false'
           }
