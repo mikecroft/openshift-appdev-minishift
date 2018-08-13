@@ -1,7 +1,7 @@
 def GUID = "f704"
 def CLUSTER = "na39.openshift.opentlc.com"
 def customSlavePod = "maven-appdev"
-def customSlaveContainer = "docker-registry.default.svc:5000/${GUID}-jenkins/jenkins-slave-maven-appdev"
+def customSlaveContainer = "172.30.1.1:5000/${GUID}-jenkins/jenkins-slave-maven-appdev"
 def APP="MLBParks"
 def app="mlbparks"
 
