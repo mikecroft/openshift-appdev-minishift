@@ -20,7 +20,7 @@ echo "Resetting Parks Production Environment in project ${GUID}-parks-prod to Gr
 # To be Implemented by Student
 function ocn {
     oc -n $GUID-parks-prod $@
-
+}
 
 function reset_app {
     if [ $1 != parksmap ]
